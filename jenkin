@@ -1,38 +1,61 @@
 pipeline {
     agent any
     environment {
-        DOCKER_HUB_CREDENTIALS = credentials('dockerhub-credentials')
-        DOCKER_IMAGE = "your-dockerhub-username/react-jenkins-docker-k8s"
+        // Docker Hub credentials (you need to configure this in Jenkins)
+        DOCKER_HUB_CREDENTIALS = credentials('dockerhub-credentials') 
+        DOCKER_IMAGE = "PunyaMRai/react-jenkins-docker-k8s"
     }
     stages {
         stage('Checkout') {
             steps {
+                // Checkout the code from GitHub repository
+                echo "Cloning repository from GitHub..."
                 git branch: 'main', url: 'https://github.com/your-username/react-jenkins-docker-k8s.git'
             }
         }
+        
         stage('Build') {
             steps {
+                echo "Building Docker image..."
                 script {
+                    // Build the Docker image from Dockerfile
                     docker.build(DOCKER_IMAGE)
                 }
             }
         }
+        
         stage('Push to Docker Hub') {
             steps {
+                echo "Pushing Docker image to Docker Hub..."
                 script {
+                    // Push the built Docker image to Docker Hub
                     docker.withRegistry('https://index.docker.io/v1/', 'DOCKER_HUB_CREDENTIALS') {
                         docker.image(DOCKER_IMAGE).push("latest")
                     }
                 }
             }
         }
+        
         stage('Deploy to Kubernetes') {
             steps {
+                echo "Deploying the app to Kubernetes..."
                 script {
+                    // Apply Kubernetes deployment and service using kubectl
                     sh "kubectl apply -f k8s-deployment.yaml"
                     sh "kubectl apply -f k8s-service.yaml"
                 }
             }
+        }
+    }
+    post {
+        always {
+            echo "Pipeline execution completed."
+        }
+        success {
+            echo "The pipeline completed successfully."
+        }
+        failure {
+            echo "The pipeline failed. Check the logs for more details."
         }
     }
 }
